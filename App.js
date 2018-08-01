@@ -25,7 +25,6 @@ class App extends React.Component {
      var self = this;
      axios.get('https://api.myjson.com/bins/12s0yw')
      .then(function(response) {
-       debugger;
        self.setState({shifts: response.data})
      })
    }
@@ -52,21 +51,16 @@ class App extends React.Component {
     if(item.start == index ){
       value =  item.start> 12 ?  item.start -12 +  "pm"   : item.start + "am" ;
       return(<td className={item.colorCodes}>{value}</td>);
-     // return(<td className={item.colorCodes}>{item.start}</td>);
     }else if(item.end == index){
       value =  item.end > 12 ? item.end -12 + "pm" : item.end + "am" ;
       return(<td className={item.colorCodes}>{value}</td>);
-      //return(<td className={item.colorCodes}>{item.end }</td>);
-    }  else if(index > item.start && index < item.end) {
+    }  else if((index > item.start && index < item.end) || (item.end == "" && index > item.start && item.start !== "")) {
       return (<td className={item.colorCodes}></td>);
     } else if(item.carryOver && item.carryOver == index ) {
       value = item.carryOver > 12 ? item.carryOver -12 + "pm" : item.carryOver + "am" ;
       return(<td className={item.carryOverColor}>{value}</td>);
-     // return(<td className={item.carryOverColor}>{item.carryOver}</td>);
     } else if(item.carryOver && index < item.carryOver) {
       return(<td className={item.carryOverColor}></td>);
-    } else if (item.end == "" && index > item.start && item.start !== ""){
-      return(<td className={item.colorCodes}></td>);
     } else {
       return (<td></td>);
     }
@@ -74,11 +68,12 @@ class App extends React.Component {
 
   //render roster cells
   renderCells(item) {
-    debugger;
     var self = this;
     var elem = [];
+    if(item.start == "" && item.end == "" && item.carryOver == undefined) {
+     return (<td className="break" colspan="24">Break</td>) ;
+    }
     for(var i=1;i<25;i++) {
-      
       elem.push(self.convertTimeFormat(i, item));
     }
     return elem;
