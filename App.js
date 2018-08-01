@@ -1,6 +1,7 @@
 import React, { Component } from 'react';
 import './app.scss';
 import $ from 'jquery';
+import axios from 'axios';
 
 
 class App extends React.Component {
@@ -9,98 +10,7 @@ class App extends React.Component {
     this.state = {
       selectedEmp: "",
       selectedShiftIndex:-1,
-      colorCodes : ["orange","green","yellow","red","blue","purple","voilet"],
-      shifts : [
-        {
-           "name":"Colleague 1",
-           "shiftDetails":[
-              {
-                 "day":"mon",
-                 "start":"7",
-                 "end":"11"
-              },
-              {
-                 "day":"tue",
-                 "start":"14",
-                 "end":"22"
-              },
-              {
-                 "day":"wed",
-                 "start":"8",
-                 "end":"14"
-              },
-              {
-                 "day":"thrs",
-                 "start":"24",
-                 "end":"9"
-              },
-              {
-                 "day":"fri",
-                 "start":"18",
-                 "end":"2"
-              }
-           ]
-        },
-        {
-           "name":"Colleague 2",
-           "shiftDetails":[
-              {
-                 "day":"mon",
-                 "start":"18",
-                 "end":"2"
-              },
-              {
-                 "day":"tue",
-                 "start":"19",
-                 "end":"22"
-              },
-              {
-                 "day":"wed",
-                 "start":"6",
-                 "end":"10"
-              },
-              {
-                 "day":"thrs",
-                 "start":"",
-                 "end":""
-              },
-              {
-                 "day":"fri",
-                 "start":"18",
-                 "end":"2"
-              }
-           ]
-        },{
-          "name":"Colleague 3",
-          "shiftDetails":[
-             {
-                "day":"mon",
-                "start":"5",
-                "end":"11"
-             },
-             {
-                "day":"tue",
-                "start":"",
-                "end":""
-             },
-             {
-                "day":"wed",
-                "start":"21",
-                "end":"6"
-             },
-             {
-                "day":"thrs",
-                "start":"16",
-                "end":"21"
-             },
-             {
-                "day":"fri",
-                "start":"3",
-                "end":"9"
-             }
-          ]
-       }
-     ]
+      colorCodes : ["orange","green","yellow","red","blue","purple","voilet"]
     }
     this.handleChange = this.handleChange.bind(this);
     this.renderRoster = this.renderRoster.bind(this);
@@ -108,6 +18,17 @@ class App extends React.Component {
     this.renderCells = this.renderCells.bind(this);
     this.formatShifts = this.formatShifts.bind(this);
   }
+
+  //get the roster data from server
+  componentDidMount() {
+     //get data from server using axios
+     var self = this;
+     axios.get('https://api.myjson.com/bins/12s0yw')
+     .then(function(response) {
+       debugger;
+       self.setState({shifts: response.data})
+     })
+   }
 
   //re render roaster as per the selected colleauge
   handleChange(e){
@@ -125,27 +46,39 @@ class App extends React.Component {
   //converts the 24 hour time format to 12 hr and append color code to the cells
   convertTimeFormat(index, item) {
     var value = null
-    if(item.start == index ||  (item.start == 12 + index)){
-      value =  item.start> 12 ?  item.start -12 +  "pm"  + " (S)" : item.start + "am" + " (S)";
-      return(<td className={item.colorCodes}>{value}</td>);
-    }else if(item.end == index || (item.end == 12 + index)){
-      value =  item.end > 12 ? item.end -12 + "pm" + " (E)": item.end + "am" + " (E)";
-      return(<td className={item.colorCodes}>{value}</td>);
-    } 
+    item.start = item.start ?  parseInt(item.start) : "";
+    item.end = item.end ? parseInt(item.end) : "";
 
-    if(item.carryOver && (item.carryOver == index || (item.carryOver == 12 + index))) {
-      value = item.carryOver > 12 ? item.carryOver -12 + "pm" + " (E)": item.carryOver + "am" + " (E)";
+    if(item.start == index ){
+      value =  item.start> 12 ?  item.start -12 +  "pm"   : item.start + "am" ;
+      return(<td className={item.colorCodes}>{value}</td>);
+     // return(<td className={item.colorCodes}>{item.start}</td>);
+    }else if(item.end == index){
+      value =  item.end > 12 ? item.end -12 + "pm" : item.end + "am" ;
+      return(<td className={item.colorCodes}>{value}</td>);
+      //return(<td className={item.colorCodes}>{item.end }</td>);
+    }  else if(index > item.start && index < item.end) {
+      return (<td className={item.colorCodes}></td>);
+    } else if(item.carryOver && item.carryOver == index ) {
+      value = item.carryOver > 12 ? item.carryOver -12 + "pm" : item.carryOver + "am" ;
       return(<td className={item.carryOverColor}>{value}</td>);
+     // return(<td className={item.carryOverColor}>{item.carryOver}</td>);
+    } else if(item.carryOver && index < item.carryOver) {
+      return(<td className={item.carryOverColor}></td>);
+    } else if (item.end == "" && index > item.start && item.start !== ""){
+      return(<td className={item.colorCodes}></td>);
+    } else {
+      return (<td></td>);
     }
-  
-      return (<td></td>)
   }
 
   //render roster cells
   renderCells(item) {
+    debugger;
     var self = this;
     var elem = [];
-    for(var i=1;i<13;i++) {
+    for(var i=1;i<25;i++) {
+      
       elem.push(self.convertTimeFormat(i, item));
     }
     return elem;
@@ -200,16 +133,19 @@ class App extends React.Component {
   }
 
   render() {
-    var names = [];
-    var self = this;
-    var shifts = this.state.shifts;
+    var names = [],
+        self = this,
+        shifts = this.state.shifts,
+        optionItems;
+    if(shifts) {
+      shifts.forEach(function(employee,index){
+        names.push(employee.name);
+      });
+      optionItems =  names.map((name) =>
+        <option key={name}>{name}</option>
+      );
+    }
 
-    shifts.forEach(function(employee,index){
-      names.push(employee.name);
-    });
-    var optionItems =  names.map((name) =>
-      <option key={name}>{name}</option>
-    );
     return (
       <div>
         <div className="container">
@@ -226,7 +162,7 @@ class App extends React.Component {
               <div className="table-responsive">
                 <table className="table">
                   <tbody>
-                  {this.renderRoster()}
+                      {this.renderRoster()}
                   </tbody>
                 </table>
                 </div>
