@@ -1,7 +1,12 @@
 .table{
     width:100%;
 }
-
+td {
+    width:100px;
+   
+    font:12px;
+    font-weight: bold;
+}
 .selectedData {
     background-color: blue;
     color:white;
